@@ -7,6 +7,8 @@ import com.example.demosecurity.user.UserRepo;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -40,18 +42,23 @@ public class AuthenticationService {
     public AuthenticationResponse authenticate(AuthenticationRequest request) {
 
         // If the user is a valid user then only give the token.
-        authenticationManager.authenticate(
+       Authentication authentication= authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                         request.getEmail(),
                         request.getPassword()
                 )
         );
 
-        var user=repo.findByEmail(request.getEmail())
-                .orElseThrow();
-        var jwtToken= jwtService.generateToken(user);
-        return AuthenticationResponse.builder()
-                .token(jwtToken)
-                .build();
+       if(authentication.isAuthenticated()){
+           var user=repo.findByEmail(request.getEmail())
+                   .orElseThrow();
+           var jwtToken= jwtService.generateToken(user);
+           return AuthenticationResponse.builder()
+                   .token(jwtToken)
+                   .build();
+       }else{
+           throw new UsernameNotFoundException("invalid user request!");
+       }
+
     }
 }
